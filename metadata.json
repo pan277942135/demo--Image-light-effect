@@ -1,0 +1,6 @@
+{
+  "name": "Water Caustics Demo",
+  "description": "Interactive demo of overhead-sun water caustics overlay based on ethanfox/water-caustics with customizable parameters, presets, backgrounds, and inspector.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
