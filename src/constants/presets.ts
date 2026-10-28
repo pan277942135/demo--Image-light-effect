@@ -2,6 +2,7 @@ import type { WaterCausticsOptions } from "../water-caustics";
 import {
   DEFAULT_FISH_CATCH_CONFIG,
   FROZEN_EFFECT_01_CONFIG,
+  FROZEN_EFFECT_02_CONFIG,
   type FishCatchCausticsConfig,
 } from "../water-caustics/fish-catch-caustics";
 import {
@@ -12,6 +13,7 @@ import {
 export {
   DEFAULT_FISH_CATCH_CONFIG,
   FROZEN_EFFECT_01_CONFIG,
+  FROZEN_EFFECT_02_CONFIG,
   type FishCatchCausticsConfig,
   DEFAULT_SUBMERGED_CONFIG,
   type SubmergedCausticsConfig,
@@ -28,10 +30,26 @@ export interface Preset {
 
 export const PRESETS: Preset[] = [
   {
-    id: "fish-catch-recognition",
-    name: "效果01：鱼获识别 (四周光效冻结版)",
-    subtitle: "四周流转光效 · 冻结版本01 · 蓝绿金交织",
-    description: "【渔见实拍照 (默认推荐)】已冻结配置01：spreadDurationMs: 1200, intensity: 1.50, speed: 1.00, marginRatio: 0.015, glowSize: 48, goldColor: #FEF08A, cyanColor: #38BDF8, greenColor: #2DD4BF, bottomMaskStrength: 1.00, blendRatio: 0.75, blendMode: overlay",
+    id: "fish-catch-recognition-02",
+    name: "效果02：鱼获识别 (默认推荐 02版)",
+    subtitle: "深湖青与琥珀金调 · 辉度1.80 · 贴边1.5%",
+    description: "【渔见实拍照 (默认推荐02)】intensity: 1.80, speed: 1.00, marginRatio: 0.015, glowSize: 45, goldColor: #4d9b91, cyanColor: #d89913, greenColor: #719fbc, bottomMaskStrength: 1.00, blendRatio: 0.80, blendMode: overlay",
+    backgroundId: "fish-catch-photo",
+    options: {
+      intensity: 1.80,
+      speed: 1.00,
+      scale: 0.45,
+      color: "#4d9b91",
+      tint: "#d89913",
+      tintStrength: 0.80,
+      blendMode: "overlay",
+    },
+  },
+  {
+    id: "fish-catch-recognition-01",
+    name: "效果01：鱼获识别 (冻结版本 01版)",
+    subtitle: "经典晨光淡金与天青碧蓝 · 辉度1.50 · 贴边1.5%",
+    description: "【渔见实拍照 (冻结版本01)】intensity: 1.50, speed: 1.00, marginRatio: 0.015, glowSize: 48, goldColor: #FEF08A, cyanColor: #38BDF8, greenColor: #2DD4BF, bottomMaskStrength: 1.00, blendRatio: 0.75, blendMode: overlay",
     backgroundId: "fish-catch-photo",
     options: {
       intensity: 1.50,
@@ -187,15 +205,31 @@ export interface BackgroundItem {
 export const BACKGROUNDS: BackgroundItem[] = [
   {
     id: "fish-catch-photo",
-    name: "【渔见实拍照 (默认推荐)】",
-    subtitle: "湖泊鱼获实拍 · 四周光效冻结版01 (Overlay)",
+    name: "湖泊鱼获 (默认推荐02)",
+    subtitle: "实拍01 · 湖泊大鱼经典展示",
     type: "image",
     src: "/assets/aistudio/content_4f0bda4d.jpg",
     isFishCatch: true,
   },
   {
+    id: "fish-catch-snakehead",
+    name: "船钓黑鱼 (女钓手实拍)",
+    subtitle: "实拍02 · 芦苇荡船钓大黑鱼",
+    type: "image",
+    src: "/assets/aistudio/IMG_4095_44513cbb.jpg",
+    isFishCatch: true,
+  },
+  {
+    id: "fish-catch-grass-fish",
+    name: "草地鲜鱼 (特写实拍)",
+    subtitle: "实拍03 · 草丛银白鳞光鲜鱼",
+    type: "image",
+    src: "/assets/aistudio/IMG_4082_a870a845.jpg",
+    isFishCatch: true,
+  },
+  {
     id: "bass-caustic-photo",
-    name: "鲈鱼实拍对照图 (新参考)",
+    name: "鲈鱼实拍对照图 (水下网格)",
     subtitle: "全域水下焦散网格实拍效果",
     type: "image",
     src: "/assets/aistudio/file_00000000721c8211b87c16d11ab3573e_fe604d9b.png",

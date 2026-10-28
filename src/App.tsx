@@ -11,6 +11,8 @@ import {
   PRESETS,
   BACKGROUNDS,
   DEFAULT_FISH_CATCH_CONFIG,
+  FROZEN_EFFECT_01_CONFIG,
+  FROZEN_EFFECT_02_CONFIG,
   DEFAULT_SUBMERGED_CONFIG,
   type Preset,
   type BackgroundItem,
@@ -182,11 +184,23 @@ export default function App() {
       const matchingBg = BACKGROUNDS.find((b) => b.id === preset.backgroundId) || BACKGROUNDS[0];
       setCurrentBackground(matchingBg);
       setIsPaused(false);
-    } else if (preset.id === "fish-catch-recognition") {
+    } else if (
+      preset.id === "fish-catch-recognition-02" ||
+      preset.id === "fish-catch-recognition"
+    ) {
       setFishCatchConfig({
-        ...DEFAULT_FISH_CATCH_CONFIG,
+        ...FROZEN_EFFECT_02_CONFIG,
       });
-      const matchingBg = BACKGROUNDS.find((b) => b.id === preset.backgroundId);
+      const matchingBg = BACKGROUNDS.find((b) => b.id === preset.backgroundId) || BACKGROUNDS[0];
+      if (matchingBg) {
+        setCurrentBackground(matchingBg);
+      }
+      handleReplayDiffusion();
+    } else if (preset.id === "fish-catch-recognition-01") {
+      setFishCatchConfig({
+        ...FROZEN_EFFECT_01_CONFIG,
+      });
+      const matchingBg = BACKGROUNDS.find((b) => b.id === preset.backgroundId) || BACKGROUNDS[0];
       if (matchingBg) {
         setCurrentBackground(matchingBg);
       }
@@ -247,6 +261,7 @@ export default function App() {
         onFpsUpdate={setFps}
         onDiffusionStatusChange={handleDiffusionStatusChange}
         replayTrigger={replayTrigger}
+        onSelectBackground={handleSelectBackground}
       />
 
       {/* Top Bar with Repo info, Badges & Quick actions */}

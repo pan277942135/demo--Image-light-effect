@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import { PRESETS, BACKGROUNDS, type Preset, type BackgroundItem } from "../constants/presets";
 import type { WaterCausticsOptions } from "../water-caustics";
-import type {
-  FishCatchCausticsConfig,
-  DiffusionStatus,
+import {
+  type FishCatchCausticsConfig,
+  type DiffusionStatus,
+  FROZEN_EFFECT_01_CONFIG,
+  FROZEN_EFFECT_02_CONFIG,
 } from "../water-caustics/fish-catch-caustics";
 import {
   DEFAULT_SUBMERGED_CONFIG,
@@ -58,25 +60,26 @@ const BLEND_MODES = [
 ];
 
 const FISH_HIGHLIGHT_SWATCHES = [
+  { label: "深湖青 (02推荐)", color: "#4d9b91" },
+  { label: "晨曦淡金 (01冻结)", color: "#FEF08A" },
   { label: "日光淡金 (清晨)", color: "#EDE6D2" },
   { label: "柔和浅暖白", color: "#D7EBE4" },
   { label: "浅青白", color: "#DCEEE8" },
-  { label: "晨曦微金", color: "#F3ECD8" },
-  { label: "自然日光", color: "#F7F6EE" },
   { label: "纯白", color: "#FFFFFF" },
 ];
 
 const FISH_TINT_SWATCHES = [
+  { label: "琥珀金 (02推荐)", color: "#d89913" },
+  { label: "湖天碧蓝 (01冻结)", color: "#38BDF8" },
   { label: "低饱和青绿", color: "#63968F" },
   { label: "柔和湖水绿", color: "#5F9D95" },
-  { label: "清晨水色", color: "#6AA39B" },
   { label: "深潭青翠", color: "#4B7C75" },
-  { label: "微澜浅青", color: "#7BAFA8" },
   { label: "海蓝透绿", color: "#3A8B8A" },
 ];
 
 const FISH_GREEN_SWATCHES = [
-  { label: "清晨水绿", color: "#2DD4BF" },
+  { label: "青暮天水 (02推荐)", color: "#719fbc" },
+  { label: "水草微澜 (01冻结)", color: "#2DD4BF" },
   { label: "翠绿水纹", color: "#10B981" },
   { label: "柔和湖绿", color: "#5F9D95" },
   { label: "浅青碧绿", color: "#6EE7B7" },
@@ -198,7 +201,7 @@ const overlay = createSubmergedMeshOverlay(photoContainer, {
   blendMode: "${submergedConfig.blendMode}",
 });`
     : isFishCatch
-    ? `// 【渔见实拍照 (默认推荐)】四周光效冻结版效果01
+    ? `// 【渔见实拍照 (默认推荐)】四周光效冻结版${fishCatchConfig.goldColor === "#4d9b91" || fishCatchConfig.intensity >= 1.7 ? "效果02" : "效果01"}
 import { createFishCatchOverlay } from "./fish-catch-caustics";
 
 const photoContainer = document.getElementById("photo-container");
@@ -213,9 +216,9 @@ const overlay = createFishCatchOverlay(photoContainer, {
   glowSize: ${fishCatchConfig.glowSize},
   goldColor: "${fishCatchConfig.goldColor}",
   cyanColor: "${fishCatchConfig.cyanColor}",
-  greenColor: "${fishCatchConfig.greenColor || "#2DD4BF"}",
+  greenColor: "${fishCatchConfig.greenColor || "#719fbc"}",
   bottomMaskStrength: ${(fishCatchConfig.bottomMaskStrength ?? 1.0).toFixed(2)},
-  blendRatio: ${(fishCatchConfig.blendRatio ?? 0.75).toFixed(2)},
+  blendRatio: ${(fishCatchConfig.blendRatio ?? 0.80).toFixed(2)},
   blendMode: "${currentBlend}",
 });`
     : `import { mountWaterCaustics } from "water-caustics";
@@ -376,6 +379,41 @@ const water = mountWaterCaustics(scene, {
                           光效常驻不退场 · 永久流转
                         </span>
                         <span className="text-cyan-300">包络范围加宽 · 晨光金蓝双流</span>
+                      </div>
+
+                      {/* One-click Version Switcher (02 推荐 vs 01 冻结) */}
+                      <div className="pt-2 border-t border-white/10 flex items-center gap-1.5">
+                        <span className="text-[10px] text-neutral-400 font-medium shrink-0">效果版本:</span>
+                        <div className="grid grid-cols-2 gap-1.5 flex-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onChangeFishCatchConfig(FROZEN_EFFECT_02_CONFIG);
+                              onReplayDiffusion?.();
+                            }}
+                            className={`py-1.5 px-2 rounded-lg text-[10px] font-semibold transition-all flex items-center justify-center gap-1 border ${
+                              fishCatchConfig.goldColor === "#4d9b91"
+                                ? "bg-amber-500 text-black border-amber-400 shadow-md shadow-amber-500/20"
+                                : "bg-white/5 hover:bg-white/10 text-neutral-300 border-white/10"
+                            }`}
+                          >
+                            <span>✨ 效果02 (默认推荐)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onChangeFishCatchConfig(FROZEN_EFFECT_01_CONFIG);
+                              onReplayDiffusion?.();
+                            }}
+                            className={`py-1.5 px-2 rounded-lg text-[10px] font-semibold transition-all flex items-center justify-center gap-1 border ${
+                              fishCatchConfig.goldColor === "#FEF08A"
+                                ? "bg-cyan-500 text-black border-cyan-400 shadow-md shadow-cyan-500/20"
+                                : "bg-white/5 hover:bg-white/10 text-neutral-300 border-white/10"
+                            }`}
+                          >
+                            <span>❄️ 效果01 (经典版)</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -994,8 +1032,8 @@ const water = mountWaterCaustics(scene, {
                               {bg.name}
                             </span>
                             {bg.isFishCatch && (
-                              <span className="text-[9px] px-1.5 py-0.2 bg-emerald-500/30 text-emerald-300 rounded font-bold">
-                                V1
+                              <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/30 text-emerald-300 rounded font-bold">
+                                实拍
                               </span>
                             )}
                           </div>
@@ -1034,35 +1072,56 @@ const water = mountWaterCaustics(scene, {
                     预设环境氛围：
                   </p>
                   <div className="grid grid-cols-1 gap-2">
-                    {PRESETS.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => onApplyPreset(preset)}
-                        className={`text-left p-2.5 rounded-xl border transition-all flex flex-col group ${
-                          preset.id.startsWith("fish-catch")
-                            ? "border-emerald-500/50 bg-emerald-950/25 hover:bg-emerald-950/45 ring-1 ring-emerald-500/30"
-                            : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-emerald-500/40"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-neutral-100 group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
-                            {preset.id.startsWith("fish-catch") && (
-                              <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500 text-black uppercase">
-                                效果01
+                    {PRESETS.map((preset, idx) => {
+                      const is02 = preset.id === "fish-catch-recognition-02";
+                      const is01 = preset.id === "fish-catch-recognition-01";
+                      const isOtherSection = idx === 2; // Right after 02 and 01
+
+                      return (
+                        <React.Fragment key={preset.id}>
+                          {isOtherSection && (
+                            <div className="flex items-center gap-2 my-2.5 pt-1.5 text-[10px] text-neutral-400">
+                              <div className="h-px bg-white/15 flex-1" />
+                              <span className="font-semibold text-neutral-400 tracking-wider">其他通用焦散场景</span>
+                              <div className="h-px bg-white/15 flex-1" />
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onApplyPreset(preset)}
+                            className={`text-left p-2.5 rounded-xl border transition-all flex flex-col group ${
+                              is02
+                                ? "border-amber-500/70 bg-amber-950/30 hover:bg-amber-950/50 ring-1 ring-amber-500/40"
+                                : is01
+                                ? "border-cyan-500/60 bg-cyan-950/25 hover:bg-cyan-950/45 ring-1 ring-cyan-500/30"
+                                : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-emerald-500/40"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-neutral-100 group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
+                                {is02 && (
+                                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-amber-400 text-black uppercase shadow-sm">
+                                    推荐02
+                                  </span>
+                                )}
+                                {is01 && (
+                                  <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-cyan-400 text-black uppercase shadow-sm">
+                                    冻结01
+                                  </span>
+                                )}
+                                {preset.name}
                               </span>
-                            )}
-                            {preset.name}
-                          </span>
-                          <span className="text-[10px] text-emerald-400 font-mono">
-                            {preset.subtitle}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-1">
-                          {preset.description}
-                        </p>
-                      </button>
-                    ))}
+                              <span className="text-[10px] text-emerald-400 font-mono">
+                                {preset.subtitle}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-1">
+                              {preset.description}
+                            </p>
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
                   </div>
                 </div>
               )}

@@ -16,7 +16,8 @@ import {
   type SubmergedCausticsConfig,
   DEFAULT_SUBMERGED_CONFIG,
 } from "../water-caustics/submerged-caustic-mesh";
-import type { BackgroundItem } from "../constants/presets";
+import { BACKGROUNDS, type BackgroundItem } from "../constants/presets";
+import { Images } from "lucide-react";
 
 interface WaterStageProps {
   options: WaterCausticsOptions;
@@ -29,6 +30,7 @@ interface WaterStageProps {
   onFpsUpdate: (fps: number) => void;
   onDiffusionStatusChange?: (status: DiffusionStatus, progress: number) => void;
   replayTrigger?: number;
+  onSelectBackground?: (bg: BackgroundItem) => void;
 }
 
 interface Ripple {
@@ -49,6 +51,7 @@ export const WaterStage: React.FC<WaterStageProps> = ({
   onFpsUpdate,
   onDiffusionStatusChange,
   replayTrigger,
+  onSelectBackground,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const photoContainerRef = useRef<HTMLDivElement>(null);
@@ -370,11 +373,56 @@ export const WaterStage: React.FC<WaterStageProps> = ({
       background.src ||
       "/assets/aistudio/content_4f0bda4d.jpg";
 
+    const fishCatchPhotos = BACKGROUNDS.filter((b) => b.isFishCatch && b.src);
+
     return (
       <div
         className="fixed inset-0 w-full h-full bg-[#05090c] flex items-center justify-center overflow-hidden p-2 sm:p-5 select-none"
         onPointerDown={handlePointerDown}
       >
+        {/* Floating Quick Photo Switcher Dock */}
+        <div
+          className="fixed top-3.5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 p-1 rounded-full bg-neutral-900/90 backdrop-blur-xl border border-white/20 shadow-2xl"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-1 pl-2 pr-1 text-[11px] font-medium text-neutral-300 hidden sm:flex">
+            <Images className="w-3.5 h-3.5 text-emerald-400" />
+            <span>切换测试图:</span>
+          </div>
+
+          {fishCatchPhotos.map((item, idx) => {
+            const isActive = background.id === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelectBackground?.(item)}
+                className={`relative flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs transition-all border ${
+                  isActive
+                    ? "bg-emerald-500 text-black font-semibold border-emerald-400 shadow-lg shadow-emerald-500/25 scale-105"
+                    : "bg-white/5 hover:bg-white/15 text-neutral-300 border-white/10 hover:border-white/25"
+                }`}
+                title={item.name}
+              >
+                <img
+                  src={item.src}
+                  alt={item.name}
+                  className="w-4 h-4 rounded-full object-cover shrink-0"
+                />
+                <span className="text-[11px] whitespace-nowrap">
+                  {idx === 0
+                    ? "实拍01 湖泊"
+                    : idx === 1
+                    ? "实拍02 黑鱼"
+                    : idx === 2
+                    ? "实拍03 草地"
+                    : "效果对照"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Outer wide-spread atmospheric water reflection aura (范围比原视频大) */}
         <div
           className="absolute w-[min(90vw,650px)] h-[min(90vh,950px)] pointer-events-none rounded-3xl opacity-50 blur-3xl transition-opacity duration-1000"
@@ -406,6 +454,38 @@ export const WaterStage: React.FC<WaterStageProps> = ({
             className="w-full h-full object-cover select-none pointer-events-none"
             draggable={false}
           />
+
+          {/* Previous / Next Arrow buttons on hover */}
+          {fishCatchPhotos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const curIdx = fishCatchPhotos.findIndex((p) => p.id === background.id);
+                  const prevIdx = (curIdx - 1 + fishCatchPhotos.length) % fishCatchPhotos.length;
+                  onSelectBackground?.(fishCatchPhotos[prevIdx]);
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-black/85 text-white/80 hover:text-white border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-xl text-lg font-bold"
+                title="切换上一张测试照片"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const curIdx = fishCatchPhotos.findIndex((p) => p.id === background.id);
+                  const nextIdx = (curIdx + 1) % fishCatchPhotos.length;
+                  onSelectBackground?.(fishCatchPhotos[nextIdx]);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 hover:bg-black/85 text-white/80 hover:text-white border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-xl text-lg font-bold"
+                title="切换下一张测试照片"
+              >
+                ›
+              </button>
+            </>
+          )}
 
           {/* Interactive Replay & Motion Guidance Pill */}
           <div className="absolute top-3.5 left-3.5 z-10 pointer-events-none px-3 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-[11px] text-cyan-200 flex items-center gap-2 shadow-lg">

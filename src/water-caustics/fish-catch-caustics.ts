@@ -35,7 +35,10 @@ export interface FishCatchCausticsConfig {
   blendMode: string; // "overlay"
 }
 
-export const DEFAULT_FISH_CATCH_CONFIG: FishCatchCausticsConfig = {
+/**
+ * 【渔见实拍照】四周光效冻结版效果01
+ */
+export const FROZEN_EFFECT_01_CONFIG: FishCatchCausticsConfig = {
   sceneId: "fish-catch-recognition",
   displayName: "鱼获识别",
   spreadDurationMs: 1200,
@@ -53,10 +56,28 @@ export const DEFAULT_FISH_CATCH_CONFIG: FishCatchCausticsConfig = {
 };
 
 /**
- * 【渔见实拍照 (默认推荐)】四周光效冻结版效果01
+ * 【渔见实拍照 (默认推荐)】四周光效冻结版效果02 (深湖青与琥珀金调)
  */
-export const FROZEN_EFFECT_01_CONFIG: FishCatchCausticsConfig = {
-  ...DEFAULT_FISH_CATCH_CONFIG,
+export const FROZEN_EFFECT_02_CONFIG: FishCatchCausticsConfig = {
+  sceneId: "fish-catch-recognition",
+  displayName: "鱼获识别",
+  spreadDurationMs: 1200,
+  intensity: 1.80,
+  speed: 1.00,
+  marginRatio: 0.015,
+  glowSize: 45,
+  goldColor: "#4d9b91",
+  cyanColor: "#d89913",
+  greenColor: "#719fbc",
+  bottomMaskStrength: 1.00,
+  blendRatio: 0.80,
+  causticsDensity: 0.85,
+  blendMode: "overlay",
+};
+
+// 默认推荐使用效果02版本
+export const DEFAULT_FISH_CATCH_CONFIG: FishCatchCausticsConfig = {
+  ...FROZEN_EFFECT_02_CONFIG,
 };
 
 export type DiffusionStatus = "SPREADING" | "STABLE_PLAYING";
