@@ -1,6 +1,7 @@
 import type { WaterCausticsOptions } from "../water-caustics";
 import {
   DEFAULT_FISH_CATCH_CONFIG,
+  FROZEN_EFFECT_01_CONFIG,
   type FishCatchCausticsConfig,
 } from "../water-caustics/fish-catch-caustics";
 import {
@@ -10,6 +11,7 @@ import {
 
 export {
   DEFAULT_FISH_CATCH_CONFIG,
+  FROZEN_EFFECT_01_CONFIG,
   type FishCatchCausticsConfig,
   DEFAULT_SUBMERGED_CONFIG,
   type SubmergedCausticsConfig,
@@ -27,30 +29,30 @@ export interface Preset {
 export const PRESETS: Preset[] = [
   {
     id: "fish-catch-recognition",
-    name: "鱼获识别 (渔见 AI)",
-    subtitle: "从下向上扫描 · 照片物理震颤 · 四周常驻流转",
-    description: "参考视频动态：开始识别时光效由下向上推进，照片产生微震弹跳反馈；随后光效固定常驻于四周，持续保持阳光水波粼粼流转。",
+    name: "效果01：鱼获识别 (四周光效冻结版)",
+    subtitle: "四周流转光效 · 冻结版本01 · 蓝绿金交织",
+    description: "【渔见实拍照 (默认推荐)】已冻结配置01：spreadDurationMs: 1200, intensity: 1.50, speed: 1.00, marginRatio: 0.015, glowSize: 48, goldColor: #FEF08A, cyanColor: #38BDF8, greenColor: #2DD4BF, bottomMaskStrength: 1.00, blendRatio: 0.75, blendMode: overlay",
     backgroundId: "fish-catch-photo",
     options: {
-      intensity: 0.35,
-      speed: 0.28,
+      intensity: 1.50,
+      speed: 1.00,
       scale: 0.45,
-      color: "#FFF2D6",
-      tint: "#528A7D",
-      tintStrength: 0.12,
-      blendMode: "screen",
+      color: "#FEF08A",
+      tint: "#38BDF8",
+      tintStrength: 0.75,
+      blendMode: "overlay",
     },
   },
   {
     id: "submerged-caustic-mesh",
     name: "水下光织 (沉浸焦散网)",
     subtitle: "全域双色波光网 · 碧蓝透绿 · 节点星芒",
-    description: "参考鲈鱼实拍效果：顶部碧蓝水光、下部翡翠青翠与交织节点日光金斑，全域有机焦散网格浸润覆裹。",
+    description: "参考实拍照：发丝级高密度焦散光丝，顶部碧蓝、底部翡翠绿与交织节点日光金斑，主体清晰镂空保护。",
     backgroundId: "bass-caustic-photo",
     options: {
-      intensity: 0.88,
-      speed: 0.32,
-      scale: 1.15,
+      intensity: 1.15,
+      speed: 0.26,
+      scale: 1.25,
       color: "#fff1a8",
       tint: "#00d4ff",
       tintStrength: 0.45,
@@ -184,20 +186,20 @@ export interface BackgroundItem {
 
 export const BACKGROUNDS: BackgroundItem[] = [
   {
+    id: "fish-catch-photo",
+    name: "【渔见实拍照 (默认推荐)】",
+    subtitle: "湖泊鱼获实拍 · 四周光效冻结版01 (Overlay)",
+    type: "image",
+    src: "/assets/aistudio/content_4f0bda4d.jpg",
+    isFishCatch: true,
+  },
+  {
     id: "bass-caustic-photo",
     name: "鲈鱼实拍对照图 (新参考)",
     subtitle: "全域水下焦散网格实拍效果",
     type: "image",
     src: "/assets/aistudio/file_00000000721c8211b87c16d11ab3573e_fe604d9b.png",
     isSubmergedMesh: true,
-  },
-  {
-    id: "fish-catch-photo",
-    name: "渔见实拍照 (默认推荐)",
-    subtitle: "湖泊鱼获实拍 · 四周宽幅水光常驻包裹",
-    type: "image",
-    src: "/assets/aistudio/content_4f0bda4d.jpg",
-    isFishCatch: true,
   },
   {
     id: "fish-catch-recognition",

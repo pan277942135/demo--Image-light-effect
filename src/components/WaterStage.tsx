@@ -114,8 +114,38 @@ export const WaterStage: React.FC<WaterStageProps> = ({
       fishCatchHandleRef.current.destroy();
       fishCatchHandleRef.current = null;
     }
+    if (submergedHandleRef.current) {
+      submergedHandleRef.current.destroy();
+      submergedHandleRef.current = null;
+    }
 
-    // 2. Initialize Fish Catch Scene (Canvas 2D)
+    // 2. Initialize Submerged Mesh Caustics Scene (WebGL Shader Network)
+    if (isSubmergedMesh) {
+      if (!photoContainerRef.current) return;
+      try {
+        const handle = createSubmergedMeshOverlay(
+          photoContainerRef.current,
+          submergedConfig
+        );
+        submergedHandleRef.current = handle;
+        onRendererDetected(handle.rendererKind || "webgl");
+        if (isPaused) {
+          handle.pause();
+        }
+      } catch (err) {
+        console.error("Failed to mount submerged-mesh caustics:", err);
+        onRendererDetected("unsupported", String(err));
+      }
+
+      return () => {
+        if (submergedHandleRef.current) {
+          submergedHandleRef.current.destroy();
+          submergedHandleRef.current = null;
+        }
+      };
+    }
+
+    // 3. Initialize Fish Catch Scene (Canvas 2D)
     if (isFishCatch) {
       if (!photoContainerRef.current) return;
       try {
@@ -141,7 +171,7 @@ export const WaterStage: React.FC<WaterStageProps> = ({
       };
     }
 
-    // 3. Initialize Standard WebGL Scenes
+    // 4. Initialize Standard WebGL Scenes
     if (!containerRef.current) return;
     try {
       const handle = mountWaterCaustics(containerRef.current, {
@@ -167,27 +197,35 @@ export const WaterStage: React.FC<WaterStageProps> = ({
         handleRef.current = null;
       }
     };
-  }, [isFishCatch, background.id]);
+  }, [isSubmergedMesh, isFishCatch, background.id]);
 
   // Sync config updates
   useEffect(() => {
-    if (isFishCatch && fishCatchHandleRef.current) {
+    if (isSubmergedMesh && submergedHandleRef.current) {
+      submergedHandleRef.current.updateConfig(submergedConfig);
+    } else if (isFishCatch && fishCatchHandleRef.current) {
       fishCatchHandleRef.current.updateConfig(fishCatchConfig);
     } else if (handleRef.current) {
       handleRef.current.setOptions(options);
     }
-  }, [options, fishCatchConfig, isFishCatch]);
+  }, [options, fishCatchConfig, submergedConfig, isSubmergedMesh, isFishCatch]);
 
-  // Sync pause state for standard scenes
+  // Sync pause state for active scenes
   useEffect(() => {
-    if (isFishCatch) return;
-    if (!handleRef.current) return;
-    if (isPaused) {
-      handleRef.current.pause();
-    } else {
-      handleRef.current.resume();
+    if (isSubmergedMesh && submergedHandleRef.current) {
+      if (isPaused) {
+        submergedHandleRef.current.pause();
+      } else {
+        submergedHandleRef.current.resume();
+      }
+    } else if (!isFishCatch && handleRef.current) {
+      if (isPaused) {
+        handleRef.current.pause();
+      } else {
+        handleRef.current.resume();
+      }
     }
-  }, [isPaused, isFishCatch]);
+  }, [isPaused, isSubmergedMesh, isFishCatch]);
 
   // Measure FPS
   useEffect(() => {
@@ -289,6 +327,7 @@ export const WaterStage: React.FC<WaterStageProps> = ({
         {/* Real photo container with submerged caustic canvas overlay */}
         <div
           ref={photoContainerRef}
+          id="photo-container"
           className="relative max-h-[88vh] h-full max-w-full rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] border border-white/20 bg-neutral-900 group cursor-pointer flex items-center justify-center transition-shadow hover:shadow-[0_0_40px_rgba(6,182,212,0.35)]"
           style={{ aspectRatio: `${photoAspectRatio}` }}
         >
@@ -348,6 +387,7 @@ export const WaterStage: React.FC<WaterStageProps> = ({
         {/* Real photo container with tactile spring shockwave shake & four-sided water aura */}
         <div
           ref={photoContainerRef}
+          id="photo-container"
           className={`relative max-h-[88vh] h-full max-w-full rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-neutral-900 group cursor-pointer flex items-center justify-center transition-shadow ${
             isShaking ? "animate-photo-shake shadow-[0_0_50px_rgba(56,189,248,0.35)]" : "shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
           }`}
@@ -372,7 +412,7 @@ export const WaterStage: React.FC<WaterStageProps> = ({
             <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping" />
             <span className="font-medium text-white/95">
               {isShaking
-                ? "光波自下向上扫描 · 照片微震反馈中..."
+                ? "四周光效流转展开 · 照片微震反馈中..."
                 : "水光固定四周 · 持续流转中 (点击照片重新触发)"}
             </span>
           </div>

@@ -32,24 +32,31 @@ export interface FishCatchCausticsConfig {
   bottomMaskStrength: number; // 1.0 (enhanced bottom-to-top linear gradient mask)
   blendRatio: number; // 0.75 (intertwine blue, green, and golden light)
   causticsDensity: number; // 0.85
-  blendMode: string; // "screen"
+  blendMode: string; // "overlay"
 }
 
 export const DEFAULT_FISH_CATCH_CONFIG: FishCatchCausticsConfig = {
   sceneId: "fish-catch-recognition",
   displayName: "鱼获识别",
-  spreadDurationMs: 1100,
-  intensity: 0.92,
-  speed: 0.65,
-  marginRatio: 0.040,
-  glowSize: 24, // Wider aura envelope matching user requirement (范围比原视频大)
+  spreadDurationMs: 1200,
+  intensity: 1.50,
+  speed: 1.00,
+  marginRatio: 0.015,
+  glowSize: 48,
   goldColor: "#FEF08A",
   cyanColor: "#38BDF8",
   greenColor: "#2DD4BF",
-  bottomMaskStrength: 0.85,
+  bottomMaskStrength: 1.00,
   blendRatio: 0.75,
   causticsDensity: 0.85,
-  blendMode: "screen",
+  blendMode: "overlay",
+};
+
+/**
+ * 【渔见实拍照 (默认推荐)】四周光效冻结版效果01
+ */
+export const FROZEN_EFFECT_01_CONFIG: FishCatchCausticsConfig = {
+  ...DEFAULT_FISH_CATCH_CONFIG,
 };
 
 export type DiffusionStatus = "SPREADING" | "STABLE_PLAYING";
@@ -236,7 +243,7 @@ export function createFishCatchOverlay(
     height: "100%",
     display: "block",
     pointerEvents: "none",
-    mixBlendMode: config.blendMode || "screen",
+    mixBlendMode: config.blendMode || "overlay",
   });
 
   // Secondary Accents 2D Canvas (Sparkle nodes and bottom flourishes matching user reference photo)
@@ -249,7 +256,7 @@ export function createFishCatchOverlay(
     height: "100%",
     display: "block",
     pointerEvents: "none",
-    mixBlendMode: config.blendMode || "screen",
+    mixBlendMode: config.blendMode || "overlay",
   });
 
   container.appendChild(shaderCanvas);

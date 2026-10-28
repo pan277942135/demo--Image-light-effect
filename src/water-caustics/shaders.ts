@@ -195,24 +195,14 @@ void main() {
   // Continuous fluid time (一直流转，不停止)
   float t = u_time * 0.42;
 
-  // 1. 开始识别后从下往上扫描的能量光波 (Upward Scan Wavefront)
-  // Scan position from 0.0 to 1.05
-  float scanY = u_spread_progress * 1.08 - 0.04;
-  
-  // Upward scan wavefront beam (极具冲击力的扫描前锋光)
-  float scanDist = abs(normY - scanY);
-  float scanBeam = smoothstep(0.09, 0.0, scanDist) * smoothstep(0.02, 0.15, u_spread_progress);
-  // Scan beam fades out smoothly right as it reaches the top
-  scanBeam *= (1.0 - smoothstep(0.96, 1.02, u_spread_progress));
-  
   // Upward revealed mask: As scan moves up, it progressively unlocks and ignites the water light
   // Once u_spread_progress >= 1.0, revealedMask is fully 1.0 everywhere and stays fixed!
   float revealedMask = (u_spread_progress >= 1.0) 
     ? 1.0 
-    : smoothstep(normY - 0.14, normY + 0.02, scanY);
+    : smoothstep(normY - 0.14, normY + 0.02, u_spread_progress * 1.08 - 0.04);
   revealedMask = clamp(revealedMask, 0.0, 1.0);
-  
-  // 2. 宽幅四周光环 (Four-sided wide perimeter aura - 范围比原视频大)
+
+  // 1. 宽幅四周光环 (Four-sided perimeter aura)
   vec2 halfRes = res * 0.5;
   vec2 centeredPos = frag - halfRes;
   float margin = min(res.x, res.y) * u_margin_ratio;
@@ -220,11 +210,12 @@ void main() {
   float cornerR = min(res.x, res.y) * 0.12;
   
   float perimAngle = atan(centeredPos.y, centeredPos.x);
+  
   // Organic breathing fluid waves along the four perimeter paths
   float perimWave = sin(perimAngle * 5.0 + t * 2.2) * 4.5 + cos(perimAngle * 9.0 - t * 1.5) * 2.6;
   float dBox = abs(sdRoundedBox(centeredPos, boxHalf, vec4(cornerR)) + perimWave);
   
-  // Expanded multi-tier bloom for wider atmospheric range (范围更宽厚大气)
+  // Multi-tier bloom around perimeter
   float effectiveGlow = max(8.0, u_glow_size);
   float wideHalo = exp(-dBox * (0.07 / (effectiveGlow * 0.12))); // Broad exterior ambient halo
   float mediumBloom = exp(-dBox * (0.16 / (effectiveGlow * 0.10))); // Mid-layer radiant bloom
@@ -238,7 +229,7 @@ void main() {
   vec3 perimeterColor = mix(u_cyan_color, u_gold_color, filamentGoldBias);
   perimeterColor = mix(perimeterColor, u_green_color, sin(filamentAngleT * 6.28 + t * 0.5) * 0.2 + 0.2);
 
-  // 3. 底部向上的自然水面微风焦散与晨光光斑 (Bottom Caustics & Sunlit Bokeh)
+  // 2. 底部向上的自然水面微风焦散与晨光光斑 (Bottom Caustics & Sunlit Bokeh - 完整保留)
   float bottomGrad = pow(clamp(1.0 - normY * 0.85, 0.0, 1.0), 1.5);
   float causticsMask = mix(0.04, 1.0, bottomGrad * u_bottom_mask_strength) * revealedMask;
   
@@ -256,21 +247,17 @@ void main() {
   vec3 waterSpectrum = mix(u_cyan_color, u_green_color, clamp(colorFlow * 0.85 + 0.1, 0.0, 1.0));
   float sunCatch = smoothstep(0.28, 0.88, waterLight * 0.55 + colorFlow * 0.45);
   vec3 bottomCausticColor = mix(waterSpectrum, u_gold_color, clamp(sunCatch * u_blend_ratio, 0.0, 1.0));
-  
-  // 4. 向上扫描波的冲击高亮 (Upward Scan Wavefront High-energy surge)
-  vec3 scanColor = mix(u_cyan_color, u_gold_color, 0.55) * 1.6 + vec3(0.35);
-  float scanIntensity = scanBeam * 1.35;
-  
-  // 5. 组合与混合 (保持常驻流转，不消失)
+
+  // 3. 组合与混合 (注意：完全去掉了中间那条白横光 scanBeam，其他所有焦散与混合完全恢复原始参数！)
   float bottomContrib = waterLight * causticsMask * 0.68;
   float perimContrib = perimeterAura * 0.86;
   
-  float totalLight = (bottomContrib + perimContrib + scanIntensity) * u_intensity;
+  float totalLight = (bottomContrib + perimContrib) * u_intensity;
   float finalAlpha = clamp(totalLight, 0.0, 0.96);
   
   // Chromatic composition
-  float totalWeight = max(0.001, bottomContrib + perimContrib + scanIntensity);
-  vec3 finalRgb = (bottomCausticColor * bottomContrib + perimeterColor * perimContrib + scanColor * scanIntensity) / totalWeight;
+  float totalWeight = max(0.001, bottomContrib + perimContrib);
+  vec3 finalRgb = (bottomCausticColor * bottomContrib + perimeterColor * perimContrib) / totalWeight;
   
   // Natural sunlit specular sparkle core (轻柔高光)
   float coreSpark = smoothstep(0.85, 1.75, totalLight);

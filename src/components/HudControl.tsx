@@ -146,10 +146,6 @@ export const HudControl: React.FC<HudControlProps> = ({
 
   if (!isVisible) return null;
 
-  const handleUpdateSubmerged = (partial: Partial<SubmergedCausticsConfig>) => {
-    onChangeSubmergedConfig?.(partial);
-  };
-
   // Current values
   const currentIntensity = isSubmergedMesh
     ? submergedConfig.intensity
@@ -167,35 +163,42 @@ export const HudControl: React.FC<HudControlProps> = ({
   const currentTintStrength = options.tintStrength ?? 0.05;
   const currentColor = options.color ?? "#f8fff6";
   const currentTint = options.tint ?? "#3a8b8a";
-  const currentBlend = isFishCatch
+  const currentBlend = isSubmergedMesh
+    ? submergedConfig.blendMode
+    : isFishCatch
     ? fishCatchConfig.blendMode
     : options.blendMode ?? "screen";
 
-  const handleUpdate = (updates: {
-    intensity?: number;
-    speed?: number;
-    scale?: number;
-    tintStrength?: number;
-    color?: string;
-    tint?: string;
-    blendMode?: string;
-    glowSize?: number;
-    marginRatio?: number;
-    goldColor?: string;
-    cyanColor?: string;
-    greenColor?: string;
-    bottomMaskStrength?: number;
-    blendRatio?: number;
-  }) => {
-    if (isFishCatch) {
+  const handleUpdate = (updates: any) => {
+    if (isSubmergedMesh) {
+      onChangeSubmergedConfig?.(updates);
+    } else if (isFishCatch) {
       onChangeFishCatchConfig(updates);
     } else {
       onChangeOptions(updates);
     }
   };
 
-  const generatedCode = isFishCatch
-    ? `// 渔见 AI · 鱼获识别 Shader (蓝绿金自然融合 · 增强底部渐变遮罩)
+  const generatedCode = isSubmergedMesh
+    ? `// 水下光织 (沉浸焦散网) - 极细发丝级焦散网 + 碧蓝翡翠双色 + 主体清晰镂空
+import { createSubmergedMeshOverlay } from "./water-caustics/submerged-caustic-mesh";
+
+const photoContainer = document.getElementById("photo-container");
+
+const overlay = createSubmergedMeshOverlay(photoContainer, {
+  intensity: ${submergedConfig.intensity.toFixed(2)},
+  speed: ${submergedConfig.speed.toFixed(2)},
+  scale: ${submergedConfig.scale.toFixed(2)},
+  meshSharpness: ${submergedConfig.meshSharpness.toFixed(2)},
+  centerClarity: ${submergedConfig.centerClarity.toFixed(2)},
+  nodeSparkle: ${submergedConfig.nodeSparkle.toFixed(2)},
+  topColor: "${submergedConfig.topColor}",
+  bottomColor: "${submergedConfig.bottomColor}",
+  highlightColor: "${submergedConfig.highlightColor}",
+  blendMode: "${submergedConfig.blendMode}",
+});`
+    : isFishCatch
+    ? `// 【渔见实拍照 (默认推荐)】四周光效冻结版效果01
 import { createFishCatchOverlay } from "./fish-catch-caustics";
 
 const photoContainer = document.getElementById("photo-container");
@@ -253,7 +256,7 @@ const water = mountWaterCaustics(scene, {
                   : "text-cyan-300 bg-cyan-950/60 border-cyan-500/30"
               }`}
             >
-              {isFishCatch ? "渔见 AI · 鱼获识别 V1" : "npm · water-caustics"}
+              {isFishCatch ? "四周光效冻结版 01" : "npm · water-caustics"}
             </span>
             <span className="text-xs font-medium text-neutral-300">
               {isFishCatch ? "四周水光控制" : "HUD Control"}
@@ -345,7 +348,7 @@ const water = mountWaterCaustics(scene, {
                             {diffusionStatus === "SPREADING" ? (
                               <>
                                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-300" />
-                                <span>光效从下往上推进 · 图片微震反馈 ({Math.round(diffusionProgress * 100)}%)</span>
+                                <span>四周光效舒展推进 ({Math.round(diffusionProgress * 100)}%)</span>
                               </>
                             ) : (
                               <>
@@ -359,7 +362,7 @@ const water = mountWaterCaustics(scene, {
                           type="button"
                           onClick={onReplayDiffusion}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-white text-[10px] font-semibold transition-all border border-emerald-400/40 shadow-lg active:scale-95"
-                          title="开始识别：光效从下往上推进 + 图片抖动震颤"
+                          title="开始识别：四周光效流转展开"
                         >
                           <RefreshCw className="w-3 h-3" />
                           开始识别
@@ -380,7 +383,7 @@ const water = mountWaterCaustics(scene, {
                   {/* Intensity */}
                   <label className="block space-y-1">
                     <div className="flex justify-between items-center text-neutral-300 font-medium">
-                      <span>{isFishCatch ? "光丝辉度 (Intensity)" : "Intensity (水光强度)"}</span>
+                      <span>{isSubmergedMesh ? "水下光织强度 (Intensity)" : isFishCatch ? "光丝辉度 (Intensity)" : "Intensity (水光强度)"}</span>
                       <span className="font-mono text-emerald-300">
                         {currentIntensity.toFixed(2)}
                       </span>
@@ -388,7 +391,7 @@ const water = mountWaterCaustics(scene, {
                     <input
                       type="range"
                       min="0.10"
-                      max={isFishCatch ? "1.50" : "2.5"}
+                      max={isSubmergedMesh ? "2.50" : isFishCatch ? "2.50" : "2.5"}
                       step="0.02"
                       value={currentIntensity}
                       onChange={(e) =>
@@ -397,27 +400,27 @@ const water = mountWaterCaustics(scene, {
                       className="w-full accent-emerald-400 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-neutral-400">
-                      <span>柔和 (0.30)</span>
+                      <span>柔和 (0.40)</span>
                       <span className="text-emerald-400">
-                        {isFishCatch ? "样片效果 0.85" : "默认 1.20"}
+                        {isSubmergedMesh ? "样照推荐 1.15" : isFishCatch ? "效果01冻结 1.50" : "默认 1.20"}
                       </span>
-                      <span>明亮 (1.50)</span>
+                      <span>明亮 (2.00)</span>
                     </div>
                   </label>
 
                   {/* Speed */}
                   <label className="block space-y-1">
                     <div className="flex justify-between items-center text-neutral-300 font-medium">
-                      <span>{isFishCatch ? "流动速率 (Wave Speed)" : "Speed (流动速率)"}</span>
+                      <span>流动速率 (Wave Speed)</span>
                       <span className="font-mono text-emerald-300">
                         {currentSpeed.toFixed(2)}
                       </span>
                     </div>
                     <input
                       type="range"
-                      min="0.1"
-                      max={isFishCatch ? "1.60" : "2.5"}
-                      step="0.05"
+                      min="0.05"
+                      max={isSubmergedMesh ? "1.20" : isFishCatch ? "1.60" : "2.5"}
+                      step="0.02"
                       value={currentSpeed}
                       onChange={(e) =>
                         handleUpdate({ speed: Number(e.target.value) })
@@ -425,16 +428,114 @@ const water = mountWaterCaustics(scene, {
                       className="w-full accent-emerald-400 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-neutral-400">
-                      <span>缓慢微澜 (0.25)</span>
+                      <span>微澜悠缓 (0.15)</span>
                       <span className="text-emerald-400">
-                        {isFishCatch ? "样片效果 0.65" : "默认 1.00"}
+                        {isSubmergedMesh ? "样照推荐 0.26" : isFishCatch ? "样片效果 0.65" : "默认 1.00"}
                       </span>
-                      <span>活泼 (1.50)</span>
+                      <span>活跃流动 (1.00)</span>
                     </div>
                   </label>
 
-                  {/* Specialized Fish Catch Caustics Controls */}
-                  {isFishCatch ? (
+                  {/* Specialized Submerged Caustic Mesh Controls */}
+                  {isSubmergedMesh ? (
+                    <>
+                      {/* Density / Scale */}
+                      <label className="block space-y-1">
+                        <div className="flex justify-between items-center text-neutral-300 font-medium">
+                          <span>网格细密度 (Mesh Density)</span>
+                          <span className="font-mono text-emerald-300">
+                            {submergedConfig.scale.toFixed(2)}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.4"
+                          max="2.5"
+                          step="0.05"
+                          value={submergedConfig.scale}
+                          onChange={(e) =>
+                            handleUpdate({ scale: Number(e.target.value) })
+                          }
+                          className="w-full accent-emerald-400 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
+                        />
+                        <div className="flex justify-between text-[10px] text-neutral-400">
+                          <span>稀疏大网 (0.6)</span>
+                          <span className="text-emerald-400">发丝微网 1.25</span>
+                          <span>超高密细纹 (2.2)</span>
+                        </div>
+                      </label>
+
+                      {/* Mesh Sharpness */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="block space-y-1">
+                          <div className="flex justify-between items-center text-neutral-300 font-medium text-[11px]">
+                            <span>光丝精细锐度</span>
+                            <span className="font-mono text-emerald-300">
+                              {submergedConfig.meshSharpness.toFixed(2)}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.4"
+                            max="2.5"
+                            step="0.05"
+                            value={submergedConfig.meshSharpness}
+                            onChange={(e) =>
+                              handleUpdate({ meshSharpness: Number(e.target.value) })
+                            }
+                            className="w-full accent-emerald-400 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
+                          />
+                        </label>
+
+                        {/* Center Clarity Mask */}
+                        <label className="block space-y-1">
+                          <div className="flex justify-between items-center text-neutral-300 font-medium text-[11px]">
+                            <span>主体清晰镂空</span>
+                            <span className="font-mono text-emerald-300">
+                              {submergedConfig.centerClarity.toFixed(2)}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.0"
+                            max="1.0"
+                            step="0.02"
+                            value={submergedConfig.centerClarity}
+                            onChange={(e) =>
+                              handleUpdate({ centerClarity: Number(e.target.value) })
+                            }
+                            className="w-full accent-emerald-400 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
+                          />
+                        </label>
+                      </div>
+
+                      {/* Node Sparkle */}
+                      <label className="block space-y-1">
+                        <div className="flex justify-between items-center text-neutral-300 font-medium">
+                          <span>交汇节点星芒 (Node Sparkle)</span>
+                          <span className="font-mono text-emerald-300">
+                            {submergedConfig.nodeSparkle.toFixed(2)}
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0.0"
+                          max="2.5"
+                          step="0.05"
+                          value={submergedConfig.nodeSparkle}
+                          onChange={(e) =>
+                            handleUpdate({ nodeSparkle: Number(e.target.value) })
+                          }
+                          className="w-full accent-emerald-400 h-1.5 bg-neutral-700 rounded-lg cursor-pointer"
+                        />
+                        <div className="flex justify-between text-[10px] text-neutral-400">
+                          <span>平缓无星 (0.0)</span>
+                          <span className="text-emerald-400">钻石点芒 1.20</span>
+                          <span>耀目焦点 (2.2)</span>
+                        </div>
+                      </label>
+                    </>
+                  ) : isFishCatch ? (
                     <>
                       {/* Enhanced Bottom-to-Top Linear Gradient Mask */}
                       <label className="block space-y-1">
@@ -499,7 +600,7 @@ const water = mountWaterCaustics(scene, {
                           <input
                             type="range"
                             min="6"
-                            max="36"
+                            max="64"
                             step="1"
                             value={fishCatchConfig.glowSize}
                             onChange={(e) =>
@@ -518,8 +619,8 @@ const water = mountWaterCaustics(scene, {
                           </div>
                           <input
                             type="range"
-                            min="0.015"
-                            max="0.075"
+                            min="0.005"
+                            max="0.080"
                             step="0.005"
                             value={fishCatchConfig.marginRatio}
                             onChange={(e) =>
@@ -577,7 +678,106 @@ const water = mountWaterCaustics(scene, {
                   )}
 
                   {/* Colors Section */}
-                  {isFishCatch ? (
+                  {isSubmergedMesh ? (
+                    <div className="space-y-2 pt-2 border-t border-white/10">
+                      <div className="text-[11px] font-semibold text-emerald-300 flex items-center justify-between">
+                        <span>三波段光学渐变 (天空碧蓝 · 深水翡翠 · 节点淡金)</span>
+                        <span className="text-[10px] text-neutral-400">高保真色谱</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* 1. Top Aqua/Cyan Color */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-neutral-300 block font-medium">顶部碧蓝</span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="color"
+                              value={submergedConfig.topColor}
+                              onChange={(e) =>
+                                handleUpdate({ topColor: e.target.value })
+                              }
+                              className="w-6 h-6 rounded cursor-pointer border border-white/20 bg-transparent p-0"
+                            />
+                            <span className="font-mono text-[9px] text-neutral-300 truncate">
+                              {submergedConfig.topColor}
+                            </span>
+                          </div>
+                          <div className="flex gap-1 flex-wrap pt-0.5">
+                            {SUBMERGED_TOP_SWATCHES.slice(0, 3).map((swatch) => (
+                              <button
+                                key={swatch.color}
+                                type="button"
+                                title={swatch.label}
+                                onClick={() => handleUpdate({ topColor: swatch.color })}
+                                className="w-3 h-3 rounded-full border border-white/30 hover:scale-125 transition-transform"
+                                style={{ backgroundColor: swatch.color }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 2. Bottom Emerald Color */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-neutral-300 block font-medium">底部翡翠</span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="color"
+                              value={submergedConfig.bottomColor}
+                              onChange={(e) =>
+                                handleUpdate({ bottomColor: e.target.value })
+                              }
+                              className="w-6 h-6 rounded cursor-pointer border border-white/20 bg-transparent p-0"
+                            />
+                            <span className="font-mono text-[9px] text-neutral-300 truncate">
+                              {submergedConfig.bottomColor}
+                            </span>
+                          </div>
+                          <div className="flex gap-1 flex-wrap pt-0.5">
+                            {SUBMERGED_BOTTOM_SWATCHES.slice(0, 3).map((swatch) => (
+                              <button
+                                key={swatch.color}
+                                type="button"
+                                title={swatch.label}
+                                onClick={() => handleUpdate({ bottomColor: swatch.color })}
+                                className="w-3 h-3 rounded-full border border-white/30 hover:scale-125 transition-transform"
+                                style={{ backgroundColor: swatch.color }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 3. Sunlight Highlight Color */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-neutral-300 block font-medium">日光金芒</span>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="color"
+                              value={submergedConfig.highlightColor}
+                              onChange={(e) =>
+                                handleUpdate({ highlightColor: e.target.value })
+                              }
+                              className="w-6 h-6 rounded cursor-pointer border border-white/20 bg-transparent p-0"
+                            />
+                            <span className="font-mono text-[9px] text-neutral-300 truncate">
+                              {submergedConfig.highlightColor}
+                            </span>
+                          </div>
+                          <div className="flex gap-1 flex-wrap pt-0.5">
+                            {SUBMERGED_HIGHLIGHT_SWATCHES.slice(0, 3).map((swatch) => (
+                              <button
+                                key={swatch.color}
+                                type="button"
+                                title={swatch.label}
+                                onClick={() => handleUpdate({ highlightColor: swatch.color })}
+                                className="w-3 h-3 rounded-full border border-white/30 hover:scale-125 transition-transform"
+                                style={{ backgroundColor: swatch.color }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : isFishCatch ? (
                     <div className="space-y-2 pt-2 border-t border-white/10">
                       <div className="text-[11px] font-semibold text-emerald-300 flex items-center justify-between">
                         <span>三色水光混溶光谱 (金色 · 绿色 · 蓝色)</span>
@@ -840,13 +1040,18 @@ const water = mountWaterCaustics(scene, {
                         type="button"
                         onClick={() => onApplyPreset(preset)}
                         className={`text-left p-2.5 rounded-xl border transition-all flex flex-col group ${
-                          preset.id === "fish-catch-recognition"
-                            ? "border-emerald-500/40 bg-emerald-950/20 hover:bg-emerald-950/40"
+                          preset.id.startsWith("fish-catch")
+                            ? "border-emerald-500/50 bg-emerald-950/25 hover:bg-emerald-950/45 ring-1 ring-emerald-500/30"
                             : "border-white/10 bg-white/5 hover:bg-white/10 hover:border-emerald-500/40"
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-neutral-100 group-hover:text-emerald-300 transition-colors">
+                          <span className="font-semibold text-neutral-100 group-hover:text-emerald-300 transition-colors flex items-center gap-1.5">
+                            {preset.id.startsWith("fish-catch") && (
+                              <span className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-emerald-500 text-black uppercase">
+                                效果01
+                              </span>
+                            )}
                             {preset.name}
                           </span>
                           <span className="text-[10px] text-emerald-400 font-mono">

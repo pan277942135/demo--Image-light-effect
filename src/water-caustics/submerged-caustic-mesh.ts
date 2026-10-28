@@ -9,28 +9,28 @@
  */
 
 export interface SubmergedCausticsConfig {
-  intensity: number;       // Overall brightness (0.1 - 2.0, default 0.85)
-  speed: number;           // Animation speed (0.05 - 1.5, default 0.35)
-  scale: number;           // Mesh cell frequency/density (0.4 - 3.0, default 1.15)
-  topColor: string;        // Sky/upper water tint (default #06B6D4)
+  intensity: number;       // Overall brightness (0.1 - 2.5, default 1.15)
+  speed: number;           // Animation speed (0.05 - 1.5, default 0.26)
+  scale: number;           // Mesh cell frequency/density (0.5 - 3.0, default 1.25)
+  topColor: string;        // Sky/upper water tint (default #00D4FF)
   bottomColor: string;     // Ground/lower water tint (default #059669)
-  highlightColor: string;  // Sunlight focus/node color (default #FEF08A)
-  nodeSparkle: number;     // Intensity of intersection vertex glints (0.0 - 1.5, default 0.8)
-  meshSharpness: number;   // Caustic ridge sharpness (0.2 - 1.5, default 0.85)
-  centerClarity: number;   // Attenuation at image center (0.0 = full uniform coverage, 0.5 = slight relief, default 0.15)
+  highlightColor: string;  // Sunlight focus/node color (default #FFF1A8)
+  nodeSparkle: number;     // Intensity of intersection vertex glints (0.0 - 2.5, default 1.2)
+  meshSharpness: number;   // Caustic ridge sharpness (0.3 - 2.5, default 1.3)
+  centerClarity: number;   // Attenuation at image center (0.0 = uniform coverage, 1.0 = clear subject, default 0.72)
   blendMode: "screen" | "lighter" | "normal" | "overlay" | "soft-light";
 }
 
 export const DEFAULT_SUBMERGED_CONFIG: SubmergedCausticsConfig = {
-  intensity: 0.88,
-  speed: 0.32,
-  scale: 1.15,
+  intensity: 1.15,
+  speed: 0.26,
+  scale: 1.25,
   topColor: "#00d4ff",
   bottomColor: "#059669",
   highlightColor: "#fff1a8",
-  nodeSparkle: 0.85,
-  meshSharpness: 0.9,
-  centerClarity: 0.15,
+  nodeSparkle: 1.2,
+  meshSharpness: 1.3,
+  centerClarity: 0.72,
   blendMode: "screen",
 };
 
@@ -106,7 +106,7 @@ float noise2d(vec2 p) {
 }
 
 // Voronoi cellular distance field with feature vertex detection
-// Returns vec3(d1, d2, nodeIntensity)
+// Returns vec3(minDistToCenter, distToBorderRidge, nodeIntensity)
 vec3 voronoi(vec2 x, float t) {
   vec2 n = floor(x);
   vec2 f = fract(x);
@@ -119,8 +119,8 @@ vec3 voronoi(vec2 x, float t) {
     for (int i = -1; i <= 1; i++) {
       vec2 g = vec2(float(i), float(j));
       vec2 o = hash2(n + g);
-      // Fluid undulating motion for each seed point
-      o = 0.5 + 0.45 * sin(t * 1.5 + 6.2831 * o);
+      // Fluid undulating harmonic motion
+      o = 0.5 + 0.44 * sin(t * 1.55 + 6.28318 * o);
       vec2 r = g + o - f;
       float d = dot(r, r);
 
@@ -132,25 +132,24 @@ vec3 voronoi(vec2 x, float t) {
     }
   }
 
-  // Second pass: find second closest cell for sharp border ridges and vertex nodes
+  // Second pass: find distance to bisector line
   float md2 = 8.0;
   for (int j = -2; j <= 2; j++) {
     for (int i = -2; i <= 2; i++) {
       vec2 g = mg + vec2(float(i), float(j));
       vec2 o = hash2(n + g);
-      o = 0.5 + 0.45 * sin(t * 1.5 + 6.2831 * o);
+      o = 0.5 + 0.44 * sin(t * 1.55 + 6.28318 * o);
       vec2 r = g + o - f;
 
       if (dot(mr - r, mr - r) > 0.00001) {
-        // Distance to the bisector line between the two cells
         float d = dot(0.5 * (mr + r), normalize(r - mr));
         md2 = min(md2, d);
       }
     }
   }
 
-  // Node intensity: maximum at triple intersections / cell vertices
-  float node = exp(-max(0.0, md2) * 14.0);
+  // Vertex node intensity: sharp peak at triple-intersections
+  float node = exp(-max(0.0, md2) * 26.0);
 
   return vec3(sqrt(md), md2, node);
 }
@@ -163,68 +162,86 @@ void main() {
   vec2 p = uv;
   p.x *= aspect;
 
-  float t = u_time * 0.8;
+  float t = u_time * 0.75;
 
-  // Organic domain warping: simulated surface water ripples
+  // Organic domain warping: simulated multi-layered surface wave motion
   vec2 warp1 = vec2(
-    noise2d(p * 2.2 + vec2(t * 0.4, t * 0.3)),
-    noise2d(p * 2.2 + vec2(-t * 0.35, t * 0.45))
+    noise2d(p * 5.5 + vec2(t * 0.35, t * 0.28)),
+    noise2d(p * 5.5 + vec2(-t * 0.32, t * 0.40))
   );
 
   vec2 warp2 = vec2(
-    noise2d(p * 4.5 + warp1 * 0.6 + vec2(t * 0.2, -t * 0.25)),
-    noise2d(p * 4.5 + warp1 * 0.6 + vec2(-t * 0.28, t * 0.32))
+    noise2d(p * 11.0 + warp1 * 0.5 + vec2(t * 0.18, -t * 0.22)),
+    noise2d(p * 11.0 + warp1 * 0.5 + vec2(-t * 0.25, t * 0.28))
   );
 
-  vec2 causticsCoord = p * (u_scale * 4.0) + warp1 * 0.35 + warp2 * 0.15;
+  // Micro-mesh coordinate: high frequency for fine filamentous web (~20-30 cells across)
+  float baseDensity = 18.5 * u_scale;
+  vec2 causticsCoord = p * baseDensity + warp1 * 0.32 + warp2 * 0.14;
 
-  // Octave 1: Major caustic network
-  vec3 v1 = voronoi(causticsCoord, t * 0.9);
-  // Octave 2: Finer secondary wavelets
-  vec3 v2 = voronoi(causticsCoord * 1.85 + vec2(1.7, 3.2), t * 1.35 + 2.4);
+  // Octave 1: Major fine caustic network
+  vec3 v1 = voronoi(causticsCoord, t * 0.92);
+  // Octave 2: Secondary micro-wavelets for organic complexity
+  vec3 v2 = voronoi(causticsCoord * 1.72 + vec2(1.9, 3.4), t * 1.28 + 1.8);
 
-  // Caustic ridge formula: intense razor-sharp bright edges
-  float ridge1 = 1.0 - smoothstep(0.0, 0.18 / max(0.1, u_meshSharpness), v1.y);
-  ridge1 = pow(ridge1, 2.2);
+  // Razor-sharp physical caustic ridge formula (hair-thin filaments, not wide light pipes!)
+  float sharpness = max(0.2, u_meshSharpness);
+  float dist1 = max(0.0, v1.y);
+  float dist2 = max(0.0, v2.y);
 
-  float ridge2 = 1.0 - smoothstep(0.0, 0.14 / max(0.1, u_meshSharpness), v2.y);
-  ridge2 = pow(ridge2, 2.4);
+  // Dual-tier ridge curve: tight exponential core + smoothstep halo
+  float core1 = exp(-dist1 * (52.0 * sharpness));
+  float halo1 = pow(1.0 - smoothstep(0.0, 0.048 / sharpness, dist1), 2.8);
+  float ridge1 = core1 * 0.72 + halo1 * 0.58;
 
-  // Combine octaves with organic depth
-  float causticPattern = ridge1 * 0.75 + ridge2 * 0.45 + (ridge1 * ridge2) * 1.2;
+  float core2 = exp(-dist2 * (68.0 * sharpness));
+  float halo2 = pow(1.0 - smoothstep(0.0, 0.038 / sharpness, dist2), 2.6);
+  float ridge2 = core2 * 0.65 + halo2 * 0.50;
 
-  // Vertex hotspots (shining star-burst nodes where caustics meet)
-  float nodes = (v1.z * 1.4 + v2.z * 0.8 + (v1.z * v2.z) * 3.0) * u_nodeSparkle;
+  // Combine octaves: complex interwoven web with subtle interference peaks
+  float causticPattern = max(ridge1 * 0.90, ridge2 * 0.65) + (ridge1 * ridge2) * 1.35;
 
-  // Vertical color gradient:
-  // Top (uv.y -> 0 in standard UV or 1 depending on coord, here uv.y = 0 is top)
-  // Let top be uv.y close to 0, bottom uv.y close to 1
-  float verticalFactor = clamp(uv.y * 1.1 - 0.05, 0.0, 1.0);
-  vec3 waterBaseColor = mix(u_topColor, u_bottomColor, verticalFactor);
+  // Vertex hotspots: pinpoint diamond/star glints where caustic ridges intersect
+  float nodes = (pow(v1.z, 1.8) * 1.6 + pow(v2.z, 2.0) * 0.9 + pow(ridge1 * ridge2, 2.0) * 1.5) * u_nodeSparkle;
 
-  // Center clarity attenuation (keeps subject visible while enjoying rich surround caustics)
-  vec2 centerVec = (uv - vec2(0.5, 0.5)) * vec2(aspect, 1.0);
+  // Vertical chromatic transition:
+  // Top: vibrant oceanic cyan/aqua (sky and upper light)
+  // Bottom: lush emerald green (submerged weed and lower depths)
+  float verticalFactor = clamp(uv.y * 1.15 - 0.05 + sin(p.x * 2.5 + t * 0.4) * 0.03, 0.0, 1.0);
+  vec3 waterBaseColor = mix(u_topColor, u_bottomColor, smoothstep(0.18, 0.82, verticalFactor));
+
+  // Subject Center Mask: Angler and Bass are in the central core
+  // Center clarity attenuation keeps the subject crisp and clear, while edges, sky, and grass have rich caustics
+  vec2 subjectCenter = vec2(0.5 * aspect, 0.47);
+  vec2 centerVec = (vec2(p.x, uv.y) - subjectCenter) * vec2(1.0, 1.15);
   float distToCenter = length(centerVec);
-  float centerMask = mix(1.0, smoothstep(0.1, 0.75, distToCenter), u_centerClarity);
 
-  // Edge vignetting / edge boost (edges naturally gather more refractive light)
-  float edgeBoost = 1.0 + 0.45 * smoothstep(0.25, 0.8, distToCenter);
+  // Smooth subject relief: center receives soft subtle caustics (~20%) so fish and angler remain distinct
+  float subjectHole = smoothstep(0.14, 0.60, distToCenter);
+  float centerClarityMask = mix(1.0, mix(0.18, 1.0, subjectHole), u_centerClarity);
 
-  // Combine color layers
-  // 1. Water color web
-  vec3 webColor = waterBaseColor * (causticPattern * 1.35);
+  // Border & vignette boost (outer perimeter and frame gather richer refractive light)
+  float borderBoost = 1.0 + 0.55 * smoothstep(0.25, 0.78, distToCenter);
 
-  // 2. Sunlight highlight glints at intersections
-  vec3 sunGlint = u_highlightColor * (nodes * 2.2 + pow(causticPattern, 3.0) * 1.1);
+  // Color composition:
+  // 1. Filament web tinted by top-to-bottom cyan-to-emerald gradient
+  vec3 webColor = waterBaseColor * (causticPattern * 1.45);
 
-  // Total luminance
-  vec3 finalRgb = (webColor + sunGlint) * u_intensity * centerMask * edgeBoost;
+  // 2. Pinpoint sunlight diamond glints at node intersections
+  vec3 sunGlint = u_highlightColor * (nodes * 2.3);
+
+  // Total luminous intensity with subject mask and border boost
+  float totalScale = u_intensity * centerClarityMask * borderBoost;
+  vec3 finalRgb = (webColor + sunGlint) * totalScale;
+
+  // Soft tone-mapping to prevent blinding solid-white blowout while maintaining vivid luminescence
+  finalRgb = finalRgb / (1.0 + finalRgb * 0.25);
 
   // Alpha for composite blending
   float alpha = clamp(
-    (causticPattern * 0.75 + nodes * 1.2) * u_intensity * centerMask * edgeBoost,
+    (causticPattern * 0.85 + nodes * 0.90) * totalScale,
     0.0,
-    1.0
+    0.98
   );
 
   gl_FragColor = vec4(finalRgb, alpha);
